@@ -25,3 +25,5 @@ const config = {
 export const createUserApi = (data) => Api.post("/api/auth/register",data);
 
 export const login = (data) => Api.post("/api/auth/login",data);
+
+export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);

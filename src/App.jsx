@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Test from './pages/Test'
 import { Toaster } from 'react-hot-toast'
+import Verify from './pages/Verify'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -20,6 +21,7 @@ function App() {
           <Route path='/login' element={<Login/>}/>
           <Route path='/signup' element={<Signup/>}/>
           <Route path='/test' element={<Test/>}/>
+          <Route path='/verify/:token' element={<Verify/>}/>
           <Route path='/admindash' element={"Admin Dash"}/>
           <Route path='/userdash' element={"User Dash"}/>
         </Routes>

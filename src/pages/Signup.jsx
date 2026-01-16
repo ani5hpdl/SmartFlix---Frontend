@@ -98,7 +98,7 @@ export default function Signup() {
         console.log(dataToSubmit);
         try {
             const response = await createUserApi(dataToSubmit);
-            if (response.data.sucess) {
+            if (response.data.success) {
                 toast.success(response?.data?.message);
                 setFormData({
                     name: '',
