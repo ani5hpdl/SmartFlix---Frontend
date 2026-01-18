@@ -1,5 +1,5 @@
 import { Check,Play } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect,useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { verify } from "../services/api";
@@ -8,25 +8,44 @@ export default function Verify() {
     
     const navigate = useNavigate();
     const {token} = useParams();
-    let msg;
-    let title;
+    const [msg,setMsg] = useState("");
+    const [title,setTitle] = useState("");
 
     const verifyMe = async() => {
         try{
             const response = await verify(token);
             if (response?.data?.success) {
-                title = "You’re All Set!";
-                msg = "Your email has been successfully verified. Your account is now active and you are ready to start your cinematic journey."
+                setTitle("You’re All Set!");
+                setMsg("Your email has been successfully verified. Your account is now active and you are ready to start your cinematic journey.");
                 return toast.success(response?.data?.message);
             }else if(response?.data?.message == "Verification Token Expired Try Login Again!!"){
-                title = "Verification Link Expired!"
-                msg = "The link you clicked has expired. For your security. verification links are only verified for 1 hours."
+                setTitle("Verification Link Expired!");
+                setMsg("The link you clicked has expired. For your security. verification links are only verified for 1 hours.");
                 return toast.success("Token Expired! Try Logging In!!");
             }else {
-                return toast.error(response?.data?.message);
+              setTitle("Verification Link Expired or Invalid!");
+              setMsg("The link you clicked has expired OR May be Invalid. For your security. verification links are only verified for 1 hours.");
+              return toast.success("Token Expired! Try Logging In!!");
+              return toast.error(response?.data?.message);
             }
         }catch(error){
-            toast.error("Error While Verifying!!");
+            if (error.response) {
+                if (error.response.status === 404) {
+                    toast.success('User with this email already Verified!');
+                    setTitle("You’re All Set!");
+                    setMsg("Your email has been successfully verified. Your account is now active and you are ready to start your cinematic journey.");
+                } else if (error.response.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error(`Error: ${error.response.status}`);
+                }
+            } else if (error.request) {
+                // The request was made but no response was received
+                toast.error('No response from server. Please try again later.');
+            } else {
+                // Something happened in setting up the request
+                toast.error('Something went wrong!');
+            }
         }finally {
             setTimeout(() => {
                 navigate('/login');
