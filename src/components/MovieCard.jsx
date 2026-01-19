@@ -47,7 +47,7 @@ const MovieCard = ({ movie }) => {
             ${imageLoaded ? "opacity-100 group-hover:scale-105" : "opacity-0"}`}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur px-2 py-1 rounded-md flex items-center gap-1 z-10">
           <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
@@ -75,7 +75,7 @@ const MovieCard = ({ movie }) => {
 
           <button
             onClick={toggleWatchlist}
-            className={`transition-opacity flex-shrink-0 mt-0.5
+            className={`transition-opacity shrink-0 mt-0.5
                         w-7 h-7 rounded-full bg-gray-800 hover:bg-red-500
                         flex items-center justify-center
                         ${
@@ -98,7 +98,7 @@ const MovieCard = ({ movie }) => {
         <div className="flex items-center text-xs text-gray-400 gap-2">
           <span>{movie.year}</span>
           <span className="opacity-40">•</span>
-          <span>{movie.duration}</span>
+          <span>{movie.duration}in</span>
         </div>
 
         <div className="flex flex-wrap gap-1">

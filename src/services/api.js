@@ -30,4 +30,4 @@ export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);
 
 export const getAllMovies = () => Api.get("/api/movies/getmovies");
 
-export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&year=${data.year}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
+export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&yearFrom=${data.yearFrom}&yearTo=${data.yearTo}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
