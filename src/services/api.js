@@ -27,3 +27,7 @@ export const createUserApi = (data) => Api.post("/api/auth/register",data);
 export const login = (data) => Api.post("/api/auth/login",data);
 
 export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);
+
+export const getAllMovies = () => Api.get("/api/movies/getmovies");
+
+export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&year=${data.year}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
