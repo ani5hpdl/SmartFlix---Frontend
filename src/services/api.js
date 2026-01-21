@@ -31,3 +31,11 @@ export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);
 export const getAllMovies = () => Api.get("/api/movies/getmovies");
 
 export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&yearFrom=${data.yearFrom}&yearTo=${data.yearTo}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
+
+export const createUser = (data) => Api.post("/api/user/createUser",data,config);
+
+export const updateUser = (data) => Api.post("/api/user/updateUser",data,config);
+
+export const getALlUser = () => Api.get(`/api/user/getUsers`,config);
+
+export const getUserById = (id) => Api.get(`/api/user/getUserById/${id}`,config); 
