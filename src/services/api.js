@@ -34,7 +34,7 @@ export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?
 
 export const createUser = (data) => Api.post("/api/user/createUser",data,config);
 
-export const updateUser = (data) => Api.post("/api/user/updateUser",data,config);
+export const updateUser = (id,data) => Api.post(`/api/user/updateUser/${id}`,data,config);
 
 export const getALlUser = () => Api.get(`/api/user/getUsers`,config);
 

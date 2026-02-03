@@ -1,34 +1,67 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, MoreVertical, ChevronLeft, ChevronRight, SquarePen, BadgeCheck, BadgeAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getALlUser } from '../services/api';
+import { getALlUser, updateUser } from '../services/api';
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All Roles');
   const [statusFilter, setStatusFilter] = useState('Any Status');
   const [currentPage, setCurrentPage] = useState(1);
-  const [users,setUsers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [bulkRole, setBulkRole] = useState('');
+  const [showSuspendDropdown, setShowSuspendDropdown] = useState(false);
+  const [suspendingUserId, setSuspendingUserId] = useState(null);
 
-  const fetchUsers = async() => {
+  const fetchUsers = async () => {
     try {
-        const response = await getALlUser();
-        if(response.data.success){
-            setUsers(response.data.data);
-            return toast.success("Fetch Sucessfully");
-        }else{
-            return toast.error("error Fetching Users");
-        }
+      const response = await getALlUser();
+      if (response.data.success) {
+        setUsers(response.data.data);
+        return toast.success("Fetch Sucessfully");
+      } else {
+        return toast.error("error Fetching Users");
+      }
     } catch (error) {
-        return toast.error(error.message);
+      return toast.error(error.message);
     }
   }
 
-  useEffect(()=>{
+  const handleBulkRoleChange = async (role) => {
+    setBulkRole(role);
+
+    // Example payload
+    const payload = {
+      userIds: selectedUsers,
+      role
+    };
+
+    console.log('Bulk role update:', payload);
+
+    // TODO: call API here
+    // await bulkUpdateRole(payload);
+
+    toast.success(`Role updated to ${role}`);
+    setBulkRole('');
+    setSelectedUsers([]);
+  };
+
+
+  useEffect(() => {
     fetchUsers();
-  },[])
+  }, [])
+
+  useEffect(() => {
+    console.log('USER OBJECT:', users[0]);
+  }, [users]);
+
 
   const getStatusBadge = (user) => {
+
+    if (user.lockUntil && new Date(user.lockUntil) > new Date()) {
+      return <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">● Locked</span>;
+    }
     if (!user.isActive) {
       return <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">● Inactive</span>;
     }
@@ -51,6 +84,116 @@ const UserManagement = () => {
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
+
+  const getLockUntil = (duration) => {
+    const now = new Date();
+
+    switch (duration) {
+      case '1h':
+        now.setHours(now.getHours() + 1);
+        break;
+      case '24h':
+        now.setDate(now.getDate() + 1);
+        break;
+      case '7d':
+        now.setDate(now.getDate() + 7);
+        break;
+      case 'permanent':
+        return new Date('2099-12-31');
+      default:
+        return null;
+    }
+    return now;
+  };
+
+  const suspendUser = async (user, duration) => {
+    if (!user) {
+      toast.error('No user selected');
+      return;
+    }
+
+    try {
+      const lockUntil = getLockUntil(duration);
+
+      const res = await updateUser(user.id, { lockUntil });
+
+      if (res.data.success) {
+        toast.success(`User suspended (${duration})`);
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || 'Failed to suspend user'
+      );
+    } finally {
+      setShowSuspendDropdown(false);
+      setSuspendingUserId(null);
+      setSelectedUsers([]);
+    }
+  };
+
+  const formatLockUntil = (lockUntil) => {
+    if (!lockUntil) return 'Not suspended';
+
+    const lockDate = new Date(lockUntil);
+    const now = new Date();
+
+    if (lockDate <= now) {
+      return 'Expired';
+    }
+
+    return lockDate.toLocaleString(); // nice readable format
+  };
+
+  const unsuspendUser = async (user) => {
+    try {
+      const res = await updateUser(user.id, {
+        lockUntil: null,
+        isActive: true
+      });
+
+      if (res.data.success) {
+        toast.success('User unsuspended');
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to unsuspend user');
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure?')) return;
+
+    try {
+      await deleteUserApi(userId);
+      toast.success('User deleted');
+      fetchUsers();
+    } catch {
+      toast.error('Delete failed');
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesRole =
+      roleFilter === 'All Roles' ||
+      user.role === roleFilter.toLowerCase();
+
+    const matchesStatus =
+      statusFilter === 'Any Status' ||
+      (statusFilter === 'Active' && user.isActive) ||
+      (statusFilter === 'Inactive' && !user.isActive) ||
+      (statusFilter === 'Pending' && !user.isEmailVerified) ||
+      (statusFilter === 'Locked' &&
+        user.lockUntil &&
+        new Date(user.lockUntil) > new Date());
+
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex">
@@ -152,7 +295,7 @@ const UserManagement = () => {
               onChange={(e) => setRoleFilter(e.target.value)}
             >
               <option>All Roles</option>
-              <option>Administrator</option>
+              <option>Admin</option>
               <option>User</option>
             </select>
             <select
@@ -171,6 +314,84 @@ const UserManagement = () => {
             </button>
           </div>
 
+          {selectedUsers.length > 0 && (
+            <div className="mb-4 flex items-center justify-between px-4 py-3 rounded-lg bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-600 text-sm font-semibold">
+                  {selectedUsers.length}
+                </span>
+                <span className="text-sm text-slate-200">
+                  Users selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {selectedUsers.length === 1 && (
+                  <select
+                    value={bulkRole}
+                    onChange={(e) => handleBulkRoleChange(e.target.value)}
+                    className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium text-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
+                  >
+                    <option value="" disabled>
+                      Change Role
+                    </option>
+                    <option value="admin">Administrator</option>
+                    <option value="user">User</option>
+                  </select>
+                )}
+                <div className="relative">
+                  <button
+                    disabled={
+                      selectedUsers.length !== 1 ||
+                      (() => {
+                        const user = users.find(u => u.id === selectedUsers[0]);
+                        return user?.lockUntil && new Date(user.lockUntil) > new Date();
+                      })()
+                    }
+                    onClick={() => {
+                      setSuspendingUserId(selectedUsers[0]);
+                      setShowSuspendDropdown(prev => !prev);
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition
+    ${selectedUsers.length !== 1
+                        ? 'bg-slate-600 cursor-not-allowed'
+                        : 'bg-slate-700 hover:bg-slate-600'}`}
+                  >
+                    Suspend
+                  </button>
+                  {showSuspendDropdown && (
+                    <div className="absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-lg z-50">
+                      {[
+                        { label: '1 Hour', value: '1h' },
+                        { label: '24 Hours', value: '24h' },
+                        { label: '7 Days', value: '7d' },
+                        { label: 'Permanent', value: 'permanent' }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() =>
+                            suspendUser(
+                              users.find(u => u.id === suspendingUserId),
+                              opt.value
+                            )
+                          }
+                          className="block w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button onClick={() => deleteUser(1)} className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-sm font-medium transition">
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
+
+
           {/* Table */}
           <div className="bg-slate-800/50 rounded-lg border border-slate-700 overflow-hidden">
             <table className="w-full">
@@ -188,10 +409,21 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user,index) => (
+                {filteredUsers.map((user, index) => (
                   <tr key={user.id} className="border-b border-slate-700/50 hover:bg-slate-800/30 transition">
                     <td className="p-4">
-                      <input type="checkbox" className="rounded" disabled />
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={(e) => {
+                          setSelectedUsers(prev =>
+                            e.target.checked
+                              ? [...prev, user.id]
+                              : prev.filter(id => id !== user.id)
+                          );
+                        }}
+                      />
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -213,16 +445,35 @@ const UserManagement = () => {
                           Verified
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-green-400">
+                        <span className="inline-flex items-center gap-1 text-yellow-400">
                           <BadgeAlert size={18} />
-                          Verified
+                          Pending
                         </span>
                       )}
+
                     </td>
-                    <td className="p-4 text-slate-400">{user.lockUntil ? user.lockUntil : "Not yet"}</td>
+                    <td className="p-4">
+                      {user.lockUntil && new Date(user.lockUntil) > new Date() ? (
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">
+                            Suspended
+                          </span>
+                          <button
+                            onClick={() => unsuspendUser(user)}
+                            className="text-xs text-purple-400 hover:underline"
+                          >
+                            Unsuspend
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">Not suspended</span>
+                      )}
+
+                    </td>
+
                     <td className="p-4">
                       <button className="text-slate-400 hover:text-slate-200 transition">
-                        <SquarePen/>
+                        <SquarePen />
                       </button>
                     </td>
                   </tr>

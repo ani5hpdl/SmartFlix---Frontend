@@ -83,6 +83,7 @@ export default function Login() {
 
             if (rememberMe) {
                 Cookies.set('token', response?.data?.token, { expires: 7 });
+                localStorage.setItem("token", response?.data?.token)
             } else {
                 localStorage.setItem("token", response?.data?.token)
             }
