@@ -107,7 +107,7 @@ export default function UserDashboard() {
       return (
         <section className="mb-12">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
+            <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full" />
             <h2 className="cinzel text-2xl font-bold">{title}</h2>
           </div>
           <div className="glass-effect rounded-xl p-8 text-center" style={{ height }}>
@@ -122,7 +122,7 @@ export default function UserDashboard() {
     return (
       <section className="mb-12">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
+          <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full" />
           <h2 className="cinzel text-2xl font-bold">{title}</h2>
         </div>
 
@@ -144,7 +144,7 @@ export default function UserDashboard() {
           <div className="absolute inset-0 flex items-center px-16 z-20">
             <div className="max-w-2xl space-y-6">
               <div className="flex items-center gap-3">
-                <span className="px-4 py-1.5 bg-yellow-400/20 border border-yellow-400/40 rounded-full text-yellow-400 text-xs font-semibold tracking-wider">
+                <span className="px-4 py-1.5 bg-purple-600/20 border border-purple-600/40 rounded-full text-purple-600 text-xs font-semibold tracking-wider">
                   FEATURED
                 </span>
                 <span className="text-gray-400 text-sm">{movie?.year}</span>
@@ -156,8 +156,8 @@ export default function UserDashboard() {
 
               <div className="flex items-center gap-6 text-sm">
                 <div className="flex items-center gap-2">
-                  <Star className="text-yellow-400 fill-yellow-400" size={18} />
-                  <span className="text-yellow-400 font-semibold text-lg">{movie?.rating}</span>
+                  <Star className="text-yellow-600 fill-yellow-600" size={18} />
+                  <span className="text-yellow-600 font-semibold text-lg">{movie?.rating}</span>
                   <span className="text-gray-400">/10</span>
                 </div>
                 {movie?.duration && <span className="text-gray-300">{movie.duration}</span>}
@@ -177,7 +177,7 @@ export default function UserDashboard() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button className="flex items-center gap-3 px-8 py-4 bg-yellow-400 text-black font-semibold rounded-xl hover:bg-yellow-300 transition-colors shadow-lg shadow-yellow-400/30">
+                <button className="flex items-center gap-3 px-8 py-4 bg-purple-600 hover:text-black font-semibold rounded-xl hover:bg-purple-700 text-white transition-colors shadow-lg shadow-purple-600/30">
                   <Play size={20} fill="currentColor" />
                   Play Now
                 </button>
@@ -203,8 +203,8 @@ export default function UserDashboard() {
       <section className="space-y-6 mb-12">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
-            <Icon className="text-yellow-400" size={24} />
+            <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full" />
+            <Icon className="text-purple-600" size={24} />
             <h2 className="cinzel text-2xl font-bold">{title}</h2>
             {movies && <span className="text-gray-500 text-sm ml-2">({movies.length} movies)</span>}
           </div>
@@ -248,9 +248,15 @@ export default function UserDashboard() {
         }
         
         .glass-effect {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(
+    to bottom,
+    rgba(11, 15, 22, 0.95),
+    rgba(11, 15, 22, 0.88)
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
         }
         
         .gradient-text {
@@ -284,85 +290,123 @@ export default function UserDashboard() {
 
       <div className="flex">
         {/* ENHANCED SIDEBAR */}
-        <aside className="w-82 min-h-screen bg-gradient-to-b from-[#0f1419] to-[#0a0e17] border-r border-white/5 p-8 fixed left-0 top-0">
-          <div className="flex items-center gap-3 mb-12">
-            <Film className="text-yellow-400" size={32} />
-            <h1 className="cinzel text-yellow-400 text-3xl font-bold tracking-wider">CINÉMA</h1>
-          </div>
+<aside className="
+  w-80
+  h-screen
+  bg-[#0b0f16]
+  border-r border-white/5
+  fixed left-0 top-0
+  px-6 py-8
+  overflow-y-auto sidebar-scroll
+">
 
-          <nav className="space-y-2">
-            {[
-              { label: "Discover", icon: Home, active: true },
-              { label: "Browse", icon: Grid },
-              { label: "My List", icon: Heart },
-              { label: "Downloads", icon: Download },
-              { label: "Community", icon: Users },
-              { label: "History", icon: Clock },
-            ].map(({ label, icon: Icon, active }) => (
-              <button
-                key={label}
-                className={`flex items-center gap-4 w-full px-5 py-3.5 rounded-xl font-medium transition-colors group
-                ${active
-                    ? "bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 text-yellow-400 glow-effect"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                  }`}
-              >
-                <Icon size={20} className={active ? "text-yellow-400" : ""} />
-                <span className="tracking-wide">{label}</span>
-              </button>
-            ))}
-          </nav>
+  {/* LOGO */}
+  <div className="flex items-center gap-3 mb-12 shrink-0">
+    <div className="w-10 h-10 rounded-xl bg-purple-600/15 flex items-center justify-center">
+      <Film className="text-purple-500" size={22} />
+    </div>
+    <h1 className="cinzel text-purple-500 text-2xl font-bold tracking-widest">
+      SMART-FLIX
+    </h1>
+  </div>
 
-          <div className="mt-12 glass-effect rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <TrendingUp className="text-yellow-400" size={20} />
-              <h3 className="font-semibold text-sm">Trending Now</h3>
+    {/* NAVIGATION */}
+  <nav className="space-y-1">
+    {[
+      { label: "Discover", icon: Home, active: true },
+      { label: "Browse", icon: Grid },
+      { label: "My List", icon: Heart },
+      { label: "Downloads", icon: Download },
+      { label: "Community", icon: Users },
+      { label: "History", icon: Clock },
+    ].map(({ label, icon: Icon, active }) => (
+      <button
+        key={label}
+        className={`
+          group flex items-center gap-4 w-full px-4 py-3 rounded-lg text-sm font-medium transition
+          ${active
+            ? "bg-purple-600/10 text-purple-500"
+            : "text-gray-400 hover:bg-white/5 hover:text-white"}
+        `}
+      >
+        <Icon
+          size={18}
+          className={active ? "text-purple-500" : "text-gray-500 group-hover:text-white"}
+        />
+        <span className="tracking-wide">{label}</span>
+
+        {/* Active Indicator */}
+        {active && (
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500" />
+        )}
+      </button>
+    ))}
+  </nav>
+
+  {/* TRENDING CARD */}
+  <div className="mt-12 rounded-xl border border-white/5 bg-white/[0.02] p-5">
+    <div className="flex items-center gap-2 mb-2">
+      <TrendingUp size={16} className="text-purple-500" />
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-300">
+        Trending
+      </h3>
+    </div>
+    <p className="text-xs text-gray-400 leading-relaxed">
+      Weekly curated cinema picks tailored to your taste.
+    </p>
+  </div>
+
+  {/* TOP RATED – SCROLLABLE */}
+  <div className="mt-10 flex-1 overflow-y-auto pr-1">
+    <div className="flex items-center justify-between mb-4 sticky top-0 bg-[#0b0f16] py-2 z-10">
+      <h2 className="cinzel text-sm font-bold tracking-widest text-gray-200">
+        Top Rated
+      </h2>
+      <span className="text-xs text-gray-500">All time</span>
+    </div>
+
+    <div className="space-y-3 pb-6">
+      {topRatedMovies.map((movie, index) => (
+        <div
+          key={movie.id}
+          className="group flex gap-3 rounded-xl p-3 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition cursor-pointer"
+        >
+          {/* Poster */}
+          <div className="relative shrink-0">
+            <div
+              className="w-14 h-20 rounded-md bg-cover bg-center"
+              style={{ backgroundImage: `url(${movie.imageUrl})` }}
+            />
+            <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-black">
+              {index + 1}
             </div>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Discover what's hot in cinema this week. Curated picks just for you.
-            </p>
           </div>
 
-          {/* TOP RATED – SIDEBAR */}
-          <div className="mt-10 space-y-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-6 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
-              <h2 className="cinzel text-lg font-bold">Top Rated</h2>
+          {/* Info */}
+          <div className="flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-semibold leading-snug group-hover:text-purple-500 transition">
+                {movie.title}
+              </h3>
+              <p className="text-xs text-gray-500">{movie.year}</p>
             </div>
 
-            {topRatedMovies.map((movie, index) => (
-              <div
-                key={movie.id}
-                className="glass-effect rounded-xl p-3 hover-lift cursor-pointer group"
-              >
-                <div className="flex gap-3">
-                  <div className="relative">
-                    <div
-                      className="w-16 h-24 rounded-lg bg-cover bg-center"
-                      style={{ backgroundImage: `url(${movie.imageUrl})` }}
-                    />
-                    <div className="absolute -top-2 -left-2 w-7 h-7 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-black text-xs font-bold">
-                      {index + 1}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-1">
-                    <h3 className="text-sm font-semibold leading-tight group-hover:text-yellow-400 transition-colors">
-                      {movie.title}
-                    </h3>
-                    <p className="text-xs text-gray-400">{movie.year}</p>
-                    <div className="flex items-center gap-1">
-                      <Star className="text-yellow-400 fill-yellow-400" size={12} />
-                      <span className="text-xs font-semibold text-yellow-400">
-                        {movie.rating}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* ⭐ RATING */}
+            <div className="flex items-center gap-1 text-yellow-400">
+              <Star size={12} className="fill-yellow-400" />
+              <span className="text-xs font-semibold">
+                {movie.rating}
+              </span>
+            </div>
           </div>
-        </aside>
+        </div>
+      ))}
+    </div>
+  </div>
+
+</aside>
+
+
 
         {/* MAIN CONTENT */}
         <main className="ml-82 flex-1">
@@ -384,7 +428,7 @@ export default function UserDashboard() {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-yellow-400 hover:bg-white/5 rounded-lg transition-colors whitespace-nowrap"
+                  className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-purple-600 hover:bg-white/5 rounded-lg transition-colors whitespace-nowrap"
                   onClick={(e) => {
                     e.preventDefault();
                     document.querySelector(item.href)?.scrollIntoView({ 
@@ -402,7 +446,7 @@ export default function UserDashboard() {
               <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0">
                 <Bell size={20} />
               </button>
-              <button className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center flex-shrink-0">
+              <button className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0">
                 <User size={20} className="text-black" />
               </button>
             </div>
@@ -570,7 +614,7 @@ export default function UserDashboard() {
             <section id="explore-all" className="space-y-8 mt-16">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-1 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full" />
+                  <div className="w-1 h-8 bg-gradient-to-b from-purple-600 to-purple-700 rounded-full" />
                   <h2 className="cinzel text-2xl font-bold">Explore All Cinema</h2>
                 </div>
               </div>
@@ -588,7 +632,7 @@ export default function UserDashboard() {
                       }
                     }}
                     className={`px-6 py-2.5 rounded-xl font-medium whitespace-nowrap transition-colors ${(cat === "All" && filters.genres.length === 0) || filters.genres.includes(cat)
-                        ? "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black shadow-lg shadow-yellow-400/30"
+                        ? "bg-gradient-to-r from-purple-600 to-purple-700 text-black shadow-lg shadow-purple-600/30"
                         : "glass-effect text-gray-400 hover:text-white hover:bg-white/10"
                       }`}
                   >
