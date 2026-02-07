@@ -32,6 +32,8 @@ export const getAllMovies = () => Api.get("/api/movies/getmovies");
 
 export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&yearFrom=${data.yearFrom}&yearTo=${data.yearTo}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
 
+export const getMovieById = (data) => Api.get(`api/movies/getMovieById/${data}`);
+
 export const createUser = (data) => Api.post("/api/user/createUser",data,config);
 
 export const updateUser = (id,data) => Api.post(`/api/user/updateUser/${id}`,data,config);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Star, Heart, Play } from "lucide-react";
 
 const parseGenres = (genre) => {
@@ -7,6 +8,7 @@ const parseGenres = (genre) => {
 };
 
 const MovieCard = ({ movie }) => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
 
@@ -27,12 +29,18 @@ const MovieCard = ({ movie }) => {
     setIsInWatchlist(!isInWatchlist);
   };
 
-  return (
-    <div className="bg-gray-900 w-65 rounded-lg overflow-hidden cursor-pointer
-                    transition-all duration-300
-                    hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-900/20
-                    group">
+  const handleCardClick = () => {
+    navigate(`/movie/${movie.id}`);
+  };
 
+  return (
+    <div 
+      onClick={handleCardClick}
+      className="bg-gray-900 w-65 rounded-lg overflow-hidden cursor-pointer
+                  transition-all duration-300
+                  hover:-translate-y-1 hover:shadow-lg hover:shadow-purple-900/20
+                  group"
+    >
       {/* Poster */}
       <div className="relative aspect-[2.5/3] overflow-hidden">
         {!imageLoaded && (
@@ -47,7 +55,7 @@ const MovieCard = ({ movie }) => {
             ${imageLoaded ? "opacity-100 group-hover:scale-105" : "opacity-0"}`}
         />
 
-        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <div className="absolute top-2 right-2 bg-black/70 backdrop-blur px-2 py-1 rounded-md flex items-center gap-1 z-10">
           <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
@@ -117,4 +125,4 @@ const MovieCard = ({ movie }) => {
   );
 };
 
-export default MovieCard;
+export default MovieCard; 
