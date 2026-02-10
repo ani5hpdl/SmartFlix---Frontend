@@ -10,6 +10,7 @@ import UserManagement from './pages/UserManagement'
 import MovieLibrary from './pages/MovieManagement'
 import Dashboard from './pages/Dashboard'
 import MovieDetails from './pages/MovieDetails'
+import Watchlist from './pages/Watchlist'
 
 function App() {
 
@@ -28,6 +29,7 @@ function App() {
           <Route path='/moviedash' element={<MovieLibrary/>}/>
           <Route path='/dash' element={<Dashboard/>}/>
           <Route path="/movie/:id" element={<MovieDetails />} />
+          <Route path="/watchlist" element={<Watchlist />} />
         </Routes>
       </BrowserRouter>
     </>
