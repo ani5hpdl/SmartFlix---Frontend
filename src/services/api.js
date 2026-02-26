@@ -47,3 +47,5 @@ export const importMovies = () => Api.get("/api/movies/import",config);
 export const getAllReviewsAdmin = () => Api.get("/api/review/getAllReviews", config);
 
 export const deleteReviewById = (id) => Api.delete(`/api/review/deleteReview/${id}`, config);
+
+export const addReview = (data) => Api.post("/api/review/addReview", data, config);
