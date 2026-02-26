@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Film, 
-  Users, 
-  MessageSquare, 
-  BarChart3, 
-  Settings, 
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  Film,
+  Users,
+  MessageSquare,
+  BarChart3,
+  Settings,
   LayoutDashboard,
   Upload,
   Plus,
@@ -15,7 +15,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
-  TrendingUp,
   Clock,
   MoreVertical,
   Eye,
@@ -26,29 +25,234 @@ import {
   RefreshCw,
   PlayCircle
 } from 'lucide-react';
-import { getMoviesWithFilters } from '../services/api';
+import { getAllMovies } from '../services/api';
 import { toast } from 'react-hot-toast';
-import { useVirtualizer } from "@tanstack/react-virtual";
 
+// ─── Cache Hook ───────────────────────────────────────────────────────────────
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function useMovieCache(fetchFn) {
+  const cacheRef = useRef({ data: null, timestamp: null });
+  const [allMovies, setAllMovies] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadCache = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    const cache = cacheRef.current;
+
+    if (!forceRefresh && cache.data && now - cache.timestamp < CACHE_TTL) {
+      setAllMovies(cache.data);
+      return cache.data;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetchFn();
+
+      // API shape: { success: true, message: "...", movies: [...] }
+      // axios wraps in response.data, so movies lives at response.data.movies
+      const raw =
+        response?.data?.movies ??
+        response?.data?.data ??
+        response?.data ??
+        response?.movies ??
+        response ??
+        [];
+
+      const movies = Array.isArray(raw) ? raw : [];
+
+      if (!Array.isArray(raw)) {
+        console.warn('[useMovieCache] Unexpected API response shape:', response);
+      }
+
+      cacheRef.current = { data: movies, timestamp: Date.now() };
+      setAllMovies(movies);
+      return movies;
+    } catch (err) {
+      toast.error(err.message || 'Failed to load movies');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchFn]);
+
+  const invalidateCache = useCallback(() => {
+    cacheRef.current = { data: null, timestamp: null };
+  }, []);
+
+  const updateCacheItem = useCallback((updatedMovie) => {
+    if (!cacheRef.current.data) return;
+    const updated = cacheRef.current.data.map(m =>
+      m.id === updatedMovie.id ? updatedMovie : m
+    );
+    cacheRef.current.data = updated;
+    setAllMovies(updated);
+  }, []);
+
+  const deleteCacheItem = useCallback((id) => {
+    if (!cacheRef.current.data) return;
+    const updated = cacheRef.current.data.filter(m => m.id !== id);
+    cacheRef.current.data = updated;
+    setAllMovies(updated);
+  }, []);
+
+  return { allMovies, loading, loadCache, invalidateCache, updateCacheItem, deleteCacheItem };
+}
+
+// ─── Client-side Filter + Pagination Hook ────────────────────────────────────
+const PAGE_SIZE = 15;
+
+function useMovieTable(allMovies, filters, searchQuery) {
+  const [page, setPage] = useState(1);
+
+  const filtered = useMemo(() => {
+    // Guard: ensure we always operate on an array
+    let result = Array.isArray(allMovies) ? allMovies : [];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(m =>
+        m.title?.toLowerCase().includes(q) ||
+        m.director?.toLowerCase().includes(q) ||
+        m.genres?.toLowerCase().includes(q)
+      );
+    }
+
+    if (filters.genres.length > 0) {
+      result = result.filter(m =>
+        filters.genres.some(g => m.genres?.toLowerCase().includes(g.toLowerCase()))
+      );
+    }
+
+    if (filters.status !== 'all') {
+      result = result.filter(m => m.status === filters.status);
+    }
+
+    if (filters.yearFrom) {
+      result = result.filter(m => Number(m.year) >= Number(filters.yearFrom));
+    }
+
+    if (filters.yearTo) {
+      result = result.filter(m => Number(m.year) <= Number(filters.yearTo));
+    }
+
+    if (filters.rating > 0) {
+      result = result.filter(m => Number(m.totalRating) >= filters.rating);
+    }
+
+    // Default: always sort alphabetically by title
+    result = [...result].sort((a, b) =>
+      (a.title ?? "").localeCompare(b.title ?? "", undefined, { sensitivity: "base" })
+    );
+
+    return result;
+  }, [allMovies, filters, searchQuery]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  const paginated = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
+
+  const safeSetPage = useCallback((p) => {
+    setPage(Math.min(Math.max(1, p), totalPages));
+  }, [totalPages]);
+
+  return {
+    movies: paginated,
+    page,
+    setPage: safeSetPage,
+    totalPages,
+    totalCount: filtered.length,
+  };
+}
+
+// ─── Pagination Component ─────────────────────────────────────────────────────
+function Pagination({ page, totalPages, totalCount, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const from = (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, totalCount);
+
+  const getPages = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (page <= 4) return [1, 2, 3, 4, 5, '...', totalPages];
+    if (page >= totalPages - 3)
+      return [1, '...', ...Array.from({ length: 5 }, (_, i) => totalPages - 4 + i)];
+    return [1, '...', page - 1, page, page + 1, '...', totalPages];
+  };
+
+  return (
+    <div className="px-6 py-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-900/50 backdrop-blur-sm flex items-center justify-between">
+      <p className="text-sm text-slate-400">
+        Showing <span className="text-white font-semibold">{from}–{to}</span> of{' '}
+        <span className="text-white font-semibold">{totalCount}</span> results
+      </p>
+
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1}
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {getPages().map((p, i) =>
+          p === '...' ? (
+            <span key={`ellipsis-${i}`} className="px-2 text-slate-500 select-none">…</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onPageChange(p)}
+              className={`min-w-[34px] px-2 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                p === page
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              {p}
+            </button>
+          )
+        )}
+
+        <button
+          onClick={() => onPageChange(page + 1)}
+          disabled={page === totalPages}
+          className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function MovieLibrary() {
   const [selectedMovies, setSelectedMovies] = useState([]);
-  const [movies, setMovies] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showGenreDropdown, setShowGenreDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [activeMenu, setActiveMenu] = useState(null);
-  
+
   const [filters, setFilters] = useState({
     genres: [],
     yearFrom: '1990',
     yearTo: '2026',
     rating: 0,
     runtime: '',
-    status: 'all'
+    status: 'all',
   });
 
-  const [stats, setStats] = useState([
+  const [stats] = useState([
     { label: 'Total Movies', value: '2,450', icon: Film, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500/10' },
     { label: 'Active Streams', value: '12.5k', icon: PlayCircle, color: 'from-green-500 to-emerald-600', bgColor: 'bg-green-500/10' },
     { label: 'Avg Rating', value: '7.8', icon: Star, color: 'from-amber-500 to-orange-600', bgColor: 'bg-amber-500/10' },
@@ -56,36 +260,55 @@ export default function MovieLibrary() {
   ]);
 
   const genreOptions = [
-    "Action", "Adventure", "Animation", "Comedy", "Crime",
-    "Documentary", "Drama", "Family", "Fantasy", "History",
-    "Horror", "Music", "Mystery", "Romance", "Science Fiction",
-    "Thriller", "War", "Western"
+    'Action', 'Adventure', 'Animation', 'Comedy', 'Crime',
+    'Documentary', 'Drama', 'Family', 'Fantasy', 'History',
+    'Horror', 'Music', 'Mystery', 'Romance', 'Science Fiction',
+    'Thriller', 'War', 'Western',
   ];
 
   const statusOptions = [
     { value: 'all', label: 'All Status' },
     { value: 'Published', label: 'Published' },
     { value: 'Draft', label: 'Draft' },
-    { value: 'Archived', label: 'Archived' }
+    { value: 'Archived', label: 'Archived' },
   ];
 
-  const toggleSelectMovie = (id) => {
-    setSelectedMovies(prev => 
-      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
-    );
-  };
+  // ── Cache ──
+  const { allMovies, loading, loadCache, invalidateCache, updateCacheItem, deleteCacheItem } =
+    useMovieCache(getAllMovies);
 
-  const toggleGenre = (genre) => {
+  // Load all movies once on mount
+  useEffect(() => {
+    loadCache();
+  }, []);
+
+  // Debounce search — no API call, just update the debounced value
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // ── Table (filtering + pagination runs on cached data) ──
+  const { movies, page, setPage, totalPages, totalCount } =
+    useMovieTable(allMovies, filters, debouncedSearch);
+
+  // Helpers
+  const toggleSelectMovie = (id) =>
+    setSelectedMovies(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]);
+
+  const toggleGenre = (genre) =>
     setFilters(prev => ({
       ...prev,
       genres: prev.genres.includes(genre)
         ? prev.genres.filter(g => g !== genre)
-        : [...prev.genres, genre]
+        : [...prev.genres, genre],
     }));
-  };
+
+  const clearFilters = () =>
+    setFilters({ genres: [], yearFrom: '1990', yearTo: '2026', rating: 0, runtime: '', status: 'all' });
 
   const getStatusColor = (status) => {
-    switch(status?.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'published': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
       case 'draft': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
       case 'archived': return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
@@ -93,75 +316,31 @@ export default function MovieLibrary() {
     }
   };
 
-  const filterMovies = async () => {
-    try {
-      setLoading(true);
-      const data = {
-        genres: filters.genres.join(","),
-        yearFrom: filters.yearFrom,
-        yearTo: filters.yearTo,
-        minRating: filters.rating,
-        maxRating: 10,
-        status: filters.status !== 'all' ? filters.status : undefined
-      };
-      const response = await getMoviesWithFilters(data);
-      if (response.data.success) {
-        setMovies(response.data.data);
-        toast.success("Movies loaded successfully");
-      } else {
-        toast.error("Failed to fetch movies");
-      }
-    } catch (error) {
-      toast.error(error.message || "Failed to load movies");
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = () => {
+    invalidateCache();
+    loadCache(true);
+    toast.success('Movies refreshed');
   };
 
-  useEffect(() => {
-    filterMovies();
-  }, []);
-
-  // Search debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchQuery) {
-        filterMovies();
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const parentRef = useRef(null);
-
-  const rowVirtualizer = useVirtualizer({
-    count: movies.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 76,
-    overscan: 10,
-  });
+  const activeFilterCount = filters.genres.length + (filters.status !== 'all' ? 1 : 0);
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <Header stats={stats} />
 
-        {/* Content Area */}
         <section className="flex-1 overflow-auto">
           <div className="px-8 py-6">
+
             {/* Search and Filters Bar */}
             <div className="flex items-center gap-3 mb-6">
-              {/* Search */}
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search by title, director, or cast..."
+                  placeholder="Search by title, director, or genre..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all duration-200"
@@ -176,7 +355,6 @@ export default function MovieLibrary() {
                 )}
               </div>
 
-              {/* Genre Filter */}
               <GenreDropdown
                 selectedGenres={filters.genres}
                 onToggleGenre={toggleGenre}
@@ -185,7 +363,6 @@ export default function MovieLibrary() {
                 genreOptions={genreOptions}
               />
 
-              {/* Status Filter */}
               <StatusDropdown
                 selectedStatus={filters.status}
                 onSelectStatus={(status) => setFilters(prev => ({ ...prev, status }))}
@@ -194,24 +371,21 @@ export default function MovieLibrary() {
                 statusOptions={statusOptions}
               />
 
-              {/* Download Button */}
               <button className="p-3 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/50 hover:border-slate-600/50 transition-all duration-200 group">
                 <Download className="w-5 h-5 text-slate-400 group-hover:text-slate-200 transition-colors" />
               </button>
 
-              {/* Advanced Filters */}
               <button className="p-3 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/50 hover:border-slate-600/50 transition-all duration-200 group relative">
                 <SlidersHorizontal className="w-5 h-5 text-slate-400 group-hover:text-slate-200 transition-colors" />
-                {filters.genres.length > 0 && (
+                {activeFilterCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full text-[10px] flex items-center justify-center font-semibold animate-pulse">
-                    {filters.genres.length}
+                    {activeFilterCount}
                   </span>
                 )}
               </button>
 
-              {/* Refresh */}
               <button
-                onClick={filterMovies}
+                onClick={handleRefresh}
                 disabled={loading}
                 className="p-3 bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl hover:bg-slate-800/50 hover:border-slate-600/50 transition-all duration-200 group disabled:opacity-50"
               >
@@ -233,7 +407,7 @@ export default function MovieLibrary() {
                   />
                 )}
                 <button
-                  onClick={() => setFilters({ genres: [], yearFrom: '1990', yearTo: '2026', rating: 0, runtime: '', status: 'all' })}
+                  onClick={clearFilters}
                   className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors ml-2"
                 >
                   Clear all
@@ -264,8 +438,9 @@ export default function MovieLibrary() {
               </div>
             )}
 
-            {/* Table Container */}
+            {/* Table */}
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden shadow-2xl">
+
               {/* Table Header */}
               <div className="bg-gradient-to-r from-slate-800/80 to-slate-900/80 backdrop-blur-sm border-b border-slate-700/50">
                 <div className="grid grid-cols-[48px_2fr_1fr_120px_100px_120px_80px] items-center px-5 py-4">
@@ -278,7 +453,7 @@ export default function MovieLibrary() {
                         setSelectedMovies([]);
                       }
                     }}
-                    checked={selectedMovies.length === movies.length && movies.length > 0}
+                    checked={movies.length > 0 && movies.every(m => selectedMovies.includes(m.id))}
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-600 focus:ring-2 focus:ring-blue-500/50 cursor-pointer transition-all"
                   />
                   {['Title', 'Status', 'Rating', 'Year', 'Runtime', ''].map(h => (
@@ -289,74 +464,38 @@ export default function MovieLibrary() {
                 </div>
               </div>
 
-              {/* Table Body */}
+              {/* Table Body — plain list, no virtualizer needed with pagination */}
               {loading ? (
-                <TableSkeleton rows={8} />
+                <TableSkeleton rows={PAGE_SIZE} />
               ) : movies.length === 0 ? (
                 <EmptyState />
               ) : (
-                <div ref={parentRef} className="max-h-[520px] overflow-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
-                  <div
-                    style={{
-                      height: rowVirtualizer.getTotalSize(),
-                      position: "relative",
-                    }}
-                  >
-                    {rowVirtualizer.getVirtualItems().map(row => {
-                      const movie = movies[row.index];
-                      return (
-                        <MovieRow
-                          key={movie.id}
-                          movie={movie}
-                          selected={selectedMovies.includes(movie.id)}
-                          onToggleSelect={() => toggleSelectMovie(movie.id)}
-                          getStatusColor={getStatusColor}
-                          virtualRow={row}
-                          measureElement={rowVirtualizer.measureElement}
-                          activeMenu={activeMenu === movie.id}
-                          setActiveMenu={setActiveMenu}
-                        />
-                      );
-                    })}
-                  </div>
+                <div>
+                  {movies.map(movie => (
+                    <MovieRow
+                      key={movie.id}
+                      movie={movie}
+                      selected={selectedMovies.includes(movie.id)}
+                      onToggleSelect={() => toggleSelectMovie(movie.id)}
+                      getStatusColor={getStatusColor}
+                      activeMenu={activeMenu === movie.id}
+                      setActiveMenu={setActiveMenu}
+                    />
+                  ))}
                 </div>
               )}
 
               {/* Pagination */}
-              {!loading && movies.length > 0 && (
-                <div className="px-6 py-4 border-t border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-slate-900/50 backdrop-blur-sm flex items-center justify-between">
-                  <p className="text-sm text-slate-400">
-                    Showing <span className="text-white font-semibold">1–10</span> of{" "}
-                    <span className="text-white font-semibold">248</span> results
-                  </p>
-
-                  <div className="flex items-center gap-1">
-                    <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all">
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    {[1, 2, 3].map(n => (
-                      <button
-                        key={n}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                          n === 1
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
-                        }`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    <span className="px-2 text-slate-500">…</span>
-                    <button className="px-3 py-1.5 text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all">
-                      12
-                    </button>
-                    <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all">
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+              {!loading && (
+                <Pagination
+                  page={page}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  onPageChange={setPage}
+                />
               )}
             </div>
+
           </div>
         </section>
       </main>
@@ -364,11 +503,10 @@ export default function MovieLibrary() {
   );
 }
 
-// Sidebar Component
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar() {
   return (
     <aside className="w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col shadow-2xl">
-      {/* Logo */}
       <div className="px-6 py-6 border-b border-slate-700/50">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -381,7 +519,6 @@ function Sidebar() {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         <NavItem icon={LayoutDashboard} label="Dashboard" />
         <NavItem icon={Film} label="Movies" active />
@@ -391,7 +528,6 @@ function Sidebar() {
         <NavItem icon={Settings} label="Settings" />
       </nav>
 
-      {/* User Profile */}
       <div className="px-4 py-4 border-t border-slate-700/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 via-cyan-500 to-blue-500 flex items-center justify-center font-bold text-white shadow-lg">
@@ -407,7 +543,7 @@ function Sidebar() {
   );
 }
 
-// Header Component
+// ─── Header ───────────────────────────────────────────────────────────────────
 function Header({ stats }) {
   return (
     <header className="sticky top-0 z-20 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 px-8 py-6 shadow-lg">
@@ -416,11 +552,8 @@ function Header({ stats }) {
           <h1 className="text-2xl font-bold text-white bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
             Movie Library
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Curate, manage, and monitor your movie catalog
-          </p>
+          <p className="text-sm text-slate-400 mt-1">Curate, manage, and monitor your movie catalog</p>
         </div>
-
         <div className="flex items-center gap-3">
           <button className="px-4 py-2.5 rounded-xl bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 hover:bg-slate-700/50 hover:border-slate-600/50 text-sm font-medium text-slate-200 flex items-center gap-2 transition-all duration-200 shadow-lg">
             <Upload className="w-4 h-4" />
@@ -433,20 +566,16 @@ function Header({ stats }) {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-4 gap-4">
         {stats.map((stat, idx) => (
           <div
             key={idx}
             className="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 hover:border-slate-600/50 hover:shadow-xl transition-all duration-300 overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300" 
-                 style={{ backgroundImage: `linear-gradient(135deg, ${stat.color})` }}></div>
-            
+            <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-300"
+              style={{ backgroundImage: `linear-gradient(135deg, ${stat.color})` }}></div>
             <div className="relative flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                {stat.label}
-              </p>
+              <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{stat.label}</p>
               <div className={`w-10 h-10 ${stat.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
                 <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center opacity-80`}>
                   <stat.icon className="w-5 h-5 text-white" />
@@ -461,7 +590,7 @@ function Header({ stats }) {
   );
 }
 
-// Navigation Item
+// ─── NavItem ──────────────────────────────────────────────────────────────────
 function NavItem({ icon: Icon, label, active = false }) {
   return (
     <button
@@ -477,8 +606,8 @@ function NavItem({ icon: Icon, label, active = false }) {
   );
 }
 
-// Movie Row Component
-function MovieRow({ movie, selected, onToggleSelect, getStatusColor, virtualRow, measureElement, activeMenu, setActiveMenu }) {
+// ─── MovieRow ─────────────────────────────────────────────────────────────────
+function MovieRow({ movie, selected, onToggleSelect, getStatusColor, activeMenu, setActiveMenu }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -494,18 +623,7 @@ function MovieRow({ movie, selected, onToggleSelect, getStatusColor, virtualRow,
   }, [activeMenu, setActiveMenu]);
 
   return (
-    <div
-      ref={measureElement}
-      data-index={virtualRow.index}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        transform: `translateY(${virtualRow.start}px)`,
-      }}
-      className="grid grid-cols-[48px_2fr_1fr_120px_100px_120px_80px] items-center px-5 py-4 border-b border-slate-700/30 hover:bg-slate-800/40 group transition-all duration-200"
-    >
+    <div className="grid grid-cols-[48px_2fr_1fr_120px_100px_120px_80px] items-center px-5 py-4 border-b border-slate-700/30 hover:bg-slate-800/40 group transition-all duration-200">
       <input
         type="checkbox"
         checked={selected}
@@ -514,12 +632,12 @@ function MovieRow({ movie, selected, onToggleSelect, getStatusColor, virtualRow,
       />
 
       <div className="flex items-center gap-4">
-        <div className="relative w-11 h-16 rounded-lg overflow-hidden shadow-lg ring-1 ring-slate-700/50 group-hover:ring-blue-500/50 transition-all duration-200">
+        <div className="relative w-11 h-16 rounded-lg overflow-hidden shadow-lg ring-1 ring-slate-700/50 group-hover:ring-blue-500/50 transition-all duration-200 flex-shrink-0">
           <img
             src={movie.imageUrl || '/api/placeholder/44/64'}
             alt={movie.title}
             className="w-full h-full object-cover"
-            onError={(e) => e.target.src = '/api/placeholder/44/64'}
+            onError={(e) => { e.target.src = '/api/placeholder/44/64'; }}
           />
         </div>
         <div className="min-w-0">
@@ -532,7 +650,7 @@ function MovieRow({ movie, selected, onToggleSelect, getStatusColor, virtualRow,
 
       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border ${getStatusColor(movie.status)} w-fit`}>
         <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-        {movie.ageRating || 'N/A'}
+        {movie.status || 'N/A'}
       </span>
 
       <div className="flex items-center gap-1.5">
@@ -557,40 +675,34 @@ function MovieRow({ movie, selected, onToggleSelect, getStatusColor, virtualRow,
   );
 }
 
-// Action Menu
+// ─── ActionMenu ───────────────────────────────────────────────────────────────
 function ActionMenu() {
   return (
     <div className="absolute right-0 top-full mt-2 w-48 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl z-50 overflow-hidden">
       <button className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all flex items-center gap-3">
-        <Eye className="w-4 h-4" />
-        View Details
+        <Eye className="w-4 h-4" /> View Details
       </button>
       <button className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all flex items-center gap-3">
-        <Edit className="w-4 h-4" />
-        Edit Movie
+        <Edit className="w-4 h-4" /> Edit Movie
       </button>
       <button className="w-full px-4 py-2.5 text-left text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all flex items-center gap-3">
-        <Download className="w-4 h-4" />
-        Export Data
+        <Download className="w-4 h-4" /> Export Data
       </button>
       <div className="border-t border-slate-700/50"></div>
       <button className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all flex items-center gap-3">
-        <Trash2 className="w-4 h-4" />
-        Delete Movie
+        <Trash2 className="w-4 h-4" /> Delete Movie
       </button>
     </div>
   );
 }
 
-// Genre Dropdown
+// ─── GenreDropdown ────────────────────────────────────────────────────────────
 function GenreDropdown({ selectedGenres, onToggleGenre, show, setShow, genreOptions }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShow(false);
-      }
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShow(false);
     };
     if (show) {
       document.addEventListener('mousedown', handleClickOutside);
@@ -614,24 +726,19 @@ function GenreDropdown({ selectedGenres, onToggleGenre, show, setShow, genreOpti
         <ChevronDown className={`w-4 h-4 transition-transform ${show ? 'rotate-180' : ''}`} />
       </button>
       {show && (
-        <div className="absolute top-full mt-2 left-0 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl z-50 max-h-96 overflow-auto">
-          <div className="p-3">
-            <div className="grid grid-cols-2 gap-2">
-              {genreOptions.map((genre) => (
-                <label
-                  key={genre}
-                  className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-all group"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedGenres.includes(genre)}
-                    onChange={() => onToggleGenre(genre)}
-                    className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                  />
-                  <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{genre}</span>
-                </label>
-              ))}
-            </div>
+        <div className="absolute top-full mt-2 left-0 w-80 bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 rounded-xl shadow-2xl z-50 max-h-80 overflow-auto">
+          <div className="p-3 grid grid-cols-2 gap-2">
+            {genreOptions.map((genre) => (
+              <label key={genre} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-all group">
+                <input
+                  type="checkbox"
+                  checked={selectedGenres.includes(genre)}
+                  onChange={() => onToggleGenre(genre)}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-900 text-blue-600 focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                />
+                <span className="text-sm text-slate-300 group-hover:text-white transition-colors">{genre}</span>
+              </label>
+            ))}
           </div>
         </div>
       )}
@@ -639,15 +746,13 @@ function GenreDropdown({ selectedGenres, onToggleGenre, show, setShow, genreOpti
   );
 }
 
-// Status Dropdown
+// ─── StatusDropdown ───────────────────────────────────────────────────────────
 function StatusDropdown({ selectedStatus, onSelectStatus, show, setShow, statusOptions }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShow(false);
-      }
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShow(false);
     };
     if (show) {
       document.addEventListener('mousedown', handleClickOutside);
@@ -671,10 +776,7 @@ function StatusDropdown({ selectedStatus, onSelectStatus, show, setShow, statusO
           {statusOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => {
-                onSelectStatus(option.value);
-                setShow(false);
-              }}
+              onClick={() => { onSelectStatus(option.value); setShow(false); }}
               className={`w-full px-4 py-2.5 text-left text-sm transition-all ${
                 selectedStatus === option.value
                   ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium'
@@ -690,7 +792,7 @@ function StatusDropdown({ selectedStatus, onSelectStatus, show, setShow, statusO
   );
 }
 
-// Filter Chip
+// ─── FilterChip ───────────────────────────────────────────────────────────────
 function FilterChip({ label, onRemove }) {
   return (
     <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 backdrop-blur-sm text-blue-300 text-xs rounded-lg border border-blue-500/30 font-medium">
@@ -702,18 +804,15 @@ function FilterChip({ label, onRemove }) {
   );
 }
 
-// Table Skeleton
+// ─── TableSkeleton ────────────────────────────────────────────────────────────
 function TableSkeleton({ rows = 6 }) {
   return (
-    <div className="space-y-0">
+    <div>
       {Array.from({ length: rows }).map((_, i) => (
-        <div
-          key={i}
-          className="grid grid-cols-[48px_2fr_1fr_120px_100px_120px_80px] items-center px-5 py-4 border-b border-slate-700/30"
-        >
+        <div key={i} className="grid grid-cols-[48px_2fr_1fr_120px_100px_120px_80px] items-center px-5 py-4 border-b border-slate-700/30">
           <div className="w-4 h-4 bg-slate-700/50 rounded animate-pulse"></div>
           <div className="flex items-center gap-4">
-            <div className="w-11 h-16 bg-slate-700/50 rounded-lg animate-pulse"></div>
+            <div className="w-11 h-16 bg-slate-700/50 rounded-lg animate-pulse flex-shrink-0"></div>
             <div className="space-y-2 flex-1">
               <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4"></div>
               <div className="h-3 bg-slate-700/50 rounded animate-pulse w-1/2"></div>
@@ -730,7 +829,7 @@ function TableSkeleton({ rows = 6 }) {
   );
 }
 
-// Empty State
+// ─── EmptyState ───────────────────────────────────────────────────────────────
 function EmptyState() {
   return (
     <div className="py-20 flex flex-col items-center text-center">
