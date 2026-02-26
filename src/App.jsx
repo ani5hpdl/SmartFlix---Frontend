@@ -11,6 +11,7 @@ import MovieLibrary from './pages/MovieManagement'
 import Dashboard from './pages/Dashboard'
 import MovieDetails from './pages/MovieDetails'
 import Watchlist from './pages/Watchlist'
+import ReviewManagement from './pages/ReviewManagement'
 
 function App() {
 
@@ -27,6 +28,7 @@ function App() {
           <Route path='/admindash' element={<UserManagement/>}/>
           <Route path='/userdash' element={<UserDashboard/>}/>
           <Route path='/moviedash' element={<MovieLibrary/>}/>
+          <Route path='/reviewdash' element={<ReviewManagement/>}/>
           <Route path='/dash' element={<Dashboard/>}/>
           <Route path="/movie/:id" element={<MovieDetails />} />
           <Route path="/watchlist" element={<Watchlist />} />

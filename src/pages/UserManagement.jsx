@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Plus, MoreVertical, ChevronLeft, ChevronRight, SquarePen, BadgeCheck, BadgeAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getALlUser, updateUser } from '../services/api';
+import { Link } from 'react-router-dom';
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -223,10 +224,10 @@ const UserManagement = () => {
             <span className="text-lg">📈</span>
             <span>Analytics</span>
           </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
+          <Link to="/reviewdash" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
             <span className="text-lg">⭐</span>
             <span>Reviews</span>
-          </a>
+          </Link>
         </nav>
 
         <div className="mt-8 pt-4 border-t border-slate-800">

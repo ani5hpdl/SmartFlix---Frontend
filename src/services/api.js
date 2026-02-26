@@ -41,3 +41,9 @@ export const updateUser = (id,data) => Api.post(`/api/user/updateUser/${id}`,dat
 export const getALlUser = () => Api.get(`/api/user/getUsers`,config);
 
 export const getUserById = (id) => Api.get(`/api/user/getUserById/${id}`,config); 
+
+export const importMovies = () => Api.get("/api/movies/import",config);
+
+export const getAllReviewsAdmin = () => Api.get("/api/review/getAllReviews", config);
+
+export const deleteReviewById = (id) => Api.delete(`/api/review/deleteReview/${id}`, config);
