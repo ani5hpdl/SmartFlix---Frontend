@@ -16,15 +16,16 @@ const Api = axios.create({
     }
 });
 
-const config = {
-    headers : {
-        'authorization' : `Bearer ${localStorage.getItem("token")}`
-    }
-}
+const authConfig = () => ({
+    headers: {
+        authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+    },
+});
 
 export const createUserApi = (data) => Api.post("/api/auth/register",data);
 
 export const login = (data) => Api.post("/api/auth/login",data);
+export const getMe = () => Api.get("/api/auth/getMe", authConfig());
 
 export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);
 
@@ -34,18 +35,22 @@ export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?
 
 export const getMovieById = (data) => Api.get(`api/movies/getMovieById/${data}`);
 
-export const createUser = (data) => Api.post("/api/user/createUser",data,config);
+export const createUser = (data) => Api.post("/api/user/createUser",data,authConfig());
 
-export const updateUser = (id,data) => Api.post(`/api/user/updateUser/${id}`,data,config);
+export const updateUser = (id,data) => Api.post(`/api/user/updateUser/${id}`,data,authConfig());
 
-export const getALlUser = () => Api.get(`/api/user/getUsers`,config);
+export const getALlUser = () => Api.get(`/api/user/getUsers`,authConfig());
 
-export const getUserById = (id) => Api.get(`/api/user/getUserById/${id}`,config); 
+export const getUserById = (id) => Api.get(`/api/user/getUserById/${id}`,authConfig()); 
 
-export const importMovies = () => Api.get("/api/movies/import",config);
+export const importMovies = () => Api.get("/api/movies/import",authConfig());
 
-export const getAllReviewsAdmin = () => Api.get("/api/review/getAllReviews", config);
+export const getAllReviewsAdmin = () => Api.get("/api/review/getAllReviews", authConfig());
 
-export const deleteReviewById = (id) => Api.delete(`/api/review/deleteReview/${id}`, config);
+export const deleteReviewById = (id) => Api.delete(`/api/review/deleteReview/${id}`, authConfig());
 
-export const addReview = (data) => Api.post("/api/review/addReview", data, config);
+export const addReview = (data) => Api.post("/api/review/addReview", data, authConfig());
+
+export const updateReviewById = (id, data) => Api.post(`/api/review/updateReview/${id}`, data, authConfig());
+
+export const getReviewsByUser = (userId) => Api.get(`/api/review/getReviewsByUser/${userId}`);
