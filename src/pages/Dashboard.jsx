@@ -7,11 +7,13 @@ import {
 import { getMoviesWithFilters } from "../services/api";
 import { toast } from "react-hot-toast";
 import MovieCard from '../components/MovieCard';
+import { useNavigate } from "react-router-dom";
 
 export default function UserDashboard() {
   const [allMovies, setAllMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({ genres: [], yearFrom: "", yearTo: "", rating: 0 });
+  const [activeSidebarItem, setActiveSidebarItem] = useState("Discover");
 
   // ================= Helper Functions =================
   function filterMoviesByLanguage(movies, language) {
@@ -101,6 +103,44 @@ export default function UserDashboard() {
     return () => clearTimeout(timer);
   }, [filters]);
 
+  const navigate = useNavigate();
+  const handleCardClick = (movie) => {
+    navigate(`/movie/${movie.id}`);
+  };
+
+  const sidebarItems = [
+    { label: "Discover", description: "Featured picks", icon: Home, section: "#featured", available: true },
+    { label: "Browse", description: "Explore all titles", icon: Grid, route: "/explore", available: true },
+    { label: "My List", description: "Your watchlist", icon: Heart, route: "/watchlist", available: true },
+    { label: "Recommend Me", description: "Mood-based picks", icon: Sparkles, route: "/recommendations", available: true, isNew: true },
+    { label: "Community", description: "Your profile", icon: Users, route: "/profile", available: true },
+    { label: "Downloads", description: "Offline library", icon: Download, available: false },
+    { label: "History", description: "Recently watched", icon: Clock, available: false },
+  ];
+
+  const availableNavCount = sidebarItems.filter((item) => item.available).length;
+
+  const handleSidebarClick = (item) => {
+    if (!item.available) {
+      toast("This section is coming soon.");
+      return;
+    }
+
+    setActiveSidebarItem(item.label);
+
+    if (item.route) {
+      navigate(item.route);
+      return;
+    }
+
+    if (item.section) {
+      document.querySelector(item.section)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   // ================= Featured Section Component =================
   const FeaturedSection = React.memo(({ movies, title, height = "550px" }) => {
     if (!movies || movies.length === 0) {
@@ -177,7 +217,9 @@ export default function UserDashboard() {
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button className="flex items-center gap-3 px-8 py-4 bg-purple-600 hover:text-black font-semibold rounded-xl hover:bg-purple-700 text-white transition-colors shadow-lg shadow-purple-600/30">
+                <button className="flex items-center gap-3 px-8 py-4 bg-purple-600 hover:text-black font-semibold rounded-xl hover:bg-purple-700 text-white transition-colors shadow-lg shadow-purple-600/30"
+                onClick={() => handleCardClick(movie)}
+                >
                   <Play size={20} fill="currentColor" />
                   Play Now
                 </button>
@@ -290,124 +332,151 @@ export default function UserDashboard() {
 
       <div className="flex">
         {/* ENHANCED SIDEBAR */}
-<aside className="
-  w-80
-  h-screen
-  bg-[#0b0f16]
-  border-r border-white/5
-  fixed left-0 top-0
-  px-6 py-8
-  overflow-y-auto sidebar-scroll
-">
-
-  {/* LOGO */}
-  <div className="flex items-center gap-3 mb-12 shrink-0">
-    <div className="w-10 h-10 rounded-xl bg-purple-600/15 flex items-center justify-center">
-      <Film className="text-purple-500" size={22} />
-    </div>
-    <h1 className="cinzel text-purple-500 text-2xl font-bold tracking-widest">
-      SMART-FLIX
-    </h1>
-  </div>
-
-    {/* NAVIGATION */}
-  <nav className="space-y-1">
-    {[
-      { label: "Discover", icon: Home, active: true },
-      { label: "Browse", icon: Grid },
-      { label: "My List", icon: Heart },
-      { label: "Downloads", icon: Download },
-      { label: "Community", icon: Users },
-      { label: "History", icon: Clock },
-    ].map(({ label, icon: Icon, active }) => (
-      <button
-        key={label}
-        className={`
-          group flex items-center gap-4 w-full px-4 py-3 rounded-lg text-sm font-medium transition
-          ${active
-            ? "bg-purple-600/10 text-purple-500"
-            : "text-gray-400 hover:bg-white/5 hover:text-white"}
-        `}
-      >
-        <Icon
-          size={18}
-          className={active ? "text-purple-500" : "text-gray-500 group-hover:text-white"}
-        />
-        <span className="tracking-wide">{label}</span>
-
-        {/* Active Indicator */}
-        {active && (
-          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500" />
-        )}
-      </button>
-    ))}
-  </nav>
-
-  {/* TRENDING CARD */}
-  <div className="mt-12 rounded-xl border border-white/5 bg-white/[0.02] p-5">
-    <div className="flex items-center gap-2 mb-2">
-      <TrendingUp size={16} className="text-purple-500" />
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-300">
-        Trending
-      </h3>
-    </div>
-    <p className="text-xs text-gray-400 leading-relaxed">
-      Weekly curated cinema picks tailored to your taste.
-    </p>
-  </div>
-
-  {/* TOP RATED – SCROLLABLE */}
-  <div className="mt-10 flex-1 overflow-y-auto pr-1">
-    <div className="flex items-center justify-between mb-4 sticky top-0 bg-[#0b0f16] py-2 z-10">
-      <h2 className="cinzel text-sm font-bold tracking-widest text-gray-200">
-        Top Rated
-      </h2>
-      <span className="text-xs text-gray-500">All time</span>
-    </div>
-
-    <div className="space-y-3 pb-6">
-      {topRatedMovies.map((movie, index) => (
-        <div
-          key={movie.id}
-          className="group flex gap-3 rounded-xl p-3 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition cursor-pointer"
-        >
-          {/* Poster */}
-          <div className="relative shrink-0">
-            <div
-              className="w-14 h-20 rounded-md bg-cover bg-center"
-              style={{ backgroundImage: `url(${movie.imageUrl})` }}
-            />
-            <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-black">
-              {index + 1}
+        <aside className="w-80 h-screen bg-gradient-to-b from-[#0b0f16] to-[#090d14] border-r border-white/5 fixed left-0 top-0 px-5 py-6 overflow-y-auto sidebar-scroll">
+          {/* LOGO */}
+          <button
+            className="w-full flex items-center gap-3 mb-8 shrink-0 text-left"
+            onClick={() => navigate("/dashboard")}
+            aria-label="Go to dashboard home"
+          >
+            <div className="w-10 h-10 rounded-xl bg-purple-600/15 border border-purple-500/30 flex items-center justify-center">
+              <Film className="text-purple-400" size={22} />
             </div>
-          </div>
-
-          {/* Info */}
-          <div className="flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-semibold leading-snug group-hover:text-purple-500 transition">
-                {movie.title}
-              </h3>
-              <p className="text-xs text-gray-500">{movie.year}</p>
+              <h1 className="cinzel text-purple-400 text-xl font-bold tracking-widest">SMART-FLIX</h1>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500">Cinema Hub</p>
             </div>
+          </button>
 
-            {/* ⭐ RATING */}
-            <div className="flex items-center gap-1 text-yellow-400">
-              <Star size={12} className="fill-yellow-400" />
-              <span className="text-xs font-semibold">
-                {movie.rating}
+          {/* NAVIGATION */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="flex items-center justify-between px-2 mb-2">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Navigation</h2>
+              <span className="text-[10px] px-2 py-1 rounded-full border border-white/10 text-slate-400">
+                {availableNavCount} active
               </span>
             </div>
+
+            <nav className="space-y-2">
+              {sidebarItems.map((item) => {
+                const { label, description, icon: Icon, available, isNew } = item;
+                const isActive = activeSidebarItem === label;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => handleSidebarClick(item)}
+                    className={`group w-full rounded-xl border px-3 py-2.5 transition text-left ${
+                      isActive
+                        ? "border-purple-500/40 bg-purple-600/15"
+                        : available
+                        ? "border-white/10 bg-white/[0.01] hover:border-white/20 hover:bg-white/[0.04]"
+                        : "border-white/5 bg-transparent cursor-not-allowed opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isActive
+                            ? "bg-purple-500/25 text-purple-300"
+                            : available
+                            ? "bg-white/5 text-slate-400 group-hover:text-white"
+                            : "bg-white/5 text-slate-600"
+                        }`}
+                      >
+                        <Icon size={16} />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${isActive ? "text-purple-200" : available ? "text-slate-200" : "text-slate-500"}`}>
+                            {label}
+                          </span>
+                          {isNew && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200 border border-purple-500/40">
+                              New
+                            </span>
+                          )}
+                          {!available && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400 border border-slate-600">
+                              Soon
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-xs mt-0.5 ${isActive ? "text-purple-300/80" : "text-slate-500"}`}>
+                          {description}
+                        </p>
+                      </div>
+
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
 
-</aside>
+          {/* RECOMMEND CARD */}
+          <div className="mt-5 rounded-2xl border border-purple-500/25 bg-gradient-to-br from-purple-600/15 to-transparent p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles size={16} className="text-purple-300" />
+              <h3 className="text-sm font-semibold text-slate-100">Quick Pick</h3>
+            </div>
+            <p className="text-xs text-slate-300/80 leading-relaxed mb-3">
+              Get recommendations based on your current mood and who you are watching with.
+            </p>
+            <button
+              onClick={() => {
+                setActiveSidebarItem("Recommend Me");
+                navigate("/recommendations");
+              }}
+              className="w-full text-sm px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition"
+            >
+              Open Recommend Me
+            </button>
+          </div>
 
+          {/* TOP RATED */}
+          <div className="mt-6 pb-4">
+            <div className="flex items-center justify-between mb-3 sticky top-0 bg-[#0b0f16] py-2 z-10">
+              <h2 className="cinzel text-sm font-bold tracking-widest text-gray-200">Top Rated</h2>
+              <span className="text-xs text-gray-500">All time</span>
+            </div>
 
+            <div className="space-y-3">
+              {topRatedMovies.map((movie, index) => (
+                <button
+                  key={movie.id}
+                  className="w-full text-left group flex gap-3 rounded-xl p-3 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition"
+                  onClick={() => handleCardClick(movie)}
+                >
+                  <div className="relative shrink-0">
+                    <div
+                      className="w-14 h-20 rounded-md bg-cover bg-center"
+                      style={{ backgroundImage: `url(${movie.imageUrl})` }}
+                    />
+                    <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[10px] font-bold text-black">
+                      {index + 1}
+                    </div>
+                  </div>
 
+                  <div className="flex flex-col justify-between min-w-0">
+                    <div>
+                      <h3 className="text-sm font-semibold leading-snug text-slate-200 group-hover:text-purple-400 transition line-clamp-2">
+                        {movie.title}
+                      </h3>
+                      <p className="text-xs text-gray-500">{movie.year}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1 text-yellow-400">
+                      <Star size={12} className="fill-yellow-400" />
+                      <span className="text-xs font-semibold">{movie.rating}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
         {/* MAIN CONTENT */}
         <main className="ml-82 flex-1">
           {/* TOP HEADER */}
@@ -446,7 +515,10 @@ export default function UserDashboard() {
               <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0">
                 <Bell size={20} />
               </button>
-              <button className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0">
+              <button
+                onClick={() => navigate('/profile')}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center flex-shrink-0"
+              >
                 <User size={20} className="text-black" />
               </button>
             </div>
@@ -654,3 +726,4 @@ export default function UserDashboard() {
     </div>
   );
 }
+
