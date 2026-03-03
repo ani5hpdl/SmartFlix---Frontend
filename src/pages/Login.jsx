@@ -35,11 +35,11 @@ export default function Login() {
         try {
             const decoded = jwtDecode(token);
             if (decoded.role === 'admin') {
-                navigate('/admindash');
+                navigate('/admin/users');
             } else {
-                navigate('/userdash');
+                navigate('/explore');
             }
-        } catch (err) {
+        } catch {
             console.error('Invalid token');
         }
     }, [navigate]);
@@ -93,11 +93,11 @@ export default function Login() {
             let decoded;
             try {
                 decoded = jwtDecode(response?.data?.token);
-            } catch (error) {
+            } catch {
                 return toast.error("Invalid token")
             }
 
-            navigate(decoded.role === 'admin' ? '/admindash' : '/userdash');
+            navigate(decoded.role === 'admin' ? '/admin/users' : '/explore');
         } catch (error) {
             if (error.response) {
                 if (error.response.data?.message) {
