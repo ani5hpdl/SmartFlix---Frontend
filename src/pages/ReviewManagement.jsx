@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { MessageSquare, Search, Star, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { deleteReviewById, getAllReviewsAdmin } from "../services/api";
+import AdminNavbar from "../components/AdminNavbar";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -89,8 +90,9 @@ export default function ReviewManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <AdminNavbar />
+      <div className="max-w-7xl mx-auto space-y-6 p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold">Review Management</h1>
