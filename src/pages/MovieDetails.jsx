@@ -224,9 +224,9 @@ export default function MovieDetails() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#080e19] text-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0e17] text-slate-100 flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="h-12 w-12 rounded-full border-2 border-slate-700 border-t-cyan-400 animate-spin mx-auto" />
+          <div className="h-12 w-12 rounded-full border-2 border-slate-700 border-t-purple-500 animate-spin mx-auto" />
           <p className="text-slate-300">Loading movie details...</p>
         </div>
       </div>
@@ -235,7 +235,7 @@ export default function MovieDetails() {
 
   if (!movie) {
     return (
-      <div className="min-h-screen bg-[#080e19] text-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0e17] text-slate-100 flex items-center justify-center p-6">
         <div className="text-center space-y-4">
           <h2 className="text-2xl font-semibold">Movie not found</h2>
           <button
@@ -250,14 +250,14 @@ export default function MovieDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080e19] text-slate-100">
+    <div className="min-h-screen bg-[#0a0e17] text-slate-100">
       <div className="relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${movie.backdropUrl || movie.imageUrl})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060913]/40 via-[#080e19]/85 to-[#080e19]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.15),transparent_40%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#070911]/40 via-[#0a0e17]/85 to-[#0a0e17]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,51,234,0.18),transparent_45%)]" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
           <button
@@ -279,11 +279,11 @@ export default function MovieDetails() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">Movie score</p>
-                  <p className="mt-1 text-xl font-semibold text-cyan-300">{movie.rating || "0.0"}/10</p>
+                  <p className="mt-1 text-xl font-semibold text-purple-400">{movie.rating || "0.0"}/10</p>
                 </div>
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] uppercase tracking-wide text-slate-400">User score</p>
                   <p className="mt-1 text-xl font-semibold text-amber-300">{averageReviewRating}/5</p>
                 </div>
@@ -292,7 +292,7 @@ export default function MovieDetails() {
 
             <div className="space-y-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-200">
+                <span className="inline-flex items-center gap-1 text-xs px-3 py-1 rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300">
                   <Sparkles size={13} />
                   Featured
                 </span>
@@ -318,31 +318,31 @@ export default function MovieDetails() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] text-slate-400">Duration</p>
                   <p className="mt-1 text-sm font-medium flex items-center gap-2">
-                    <Clock3 size={14} className="text-cyan-300" />
+                    <Clock3 size={14} className="text-purple-400" />
                     {movie.duration || "-"}
                   </p>
                 </div>
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] text-slate-400">Release</p>
                   <p className="mt-1 text-sm font-medium flex items-center gap-2">
-                    <Calendar size={14} className="text-cyan-300" />
+                    <Calendar size={14} className="text-purple-400" />
                     {movie.releaseDate || "-"}
                   </p>
                 </div>
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] text-slate-400">Votes</p>
                   <p className="mt-1 text-sm font-medium flex items-center gap-2">
-                    <Eye size={14} className="text-cyan-300" />
+                    <Eye size={14} className="text-purple-400" />
                     {movie.votes || "-"}
                   </p>
                 </div>
-                <div className="rounded-xl bg-[#0f1628]/80 border border-white/10 p-3">
+                <div className="rounded-xl bg-[#0b0f16]/90 border border-white/10 p-3">
                   <p className="text-[11px] text-slate-400">Language</p>
                   <p className="mt-1 text-sm font-medium flex items-center gap-2">
-                    <Globe2 size={14} className="text-cyan-300" />
+                    <Globe2 size={14} className="text-purple-400" />
                     {languages[0] || "-"}
                   </p>
                 </div>
@@ -360,7 +360,7 @@ export default function MovieDetails() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold transition">
+                <button className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold transition shadow-lg shadow-purple-900/35">
                   <Play size={16} fill="currentColor" />
                   Watch now
                 </button>
@@ -368,7 +368,7 @@ export default function MovieDetails() {
                   onClick={toggleWatchlist}
                   className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl border transition ${
                     isInWatchlist
-                      ? "bg-cyan-500/15 border-cyan-400/40 text-cyan-200"
+                      ? "bg-purple-500/15 border-purple-400/40 text-purple-300"
                       : "bg-slate-900/70 border-white/10 hover:bg-slate-800/80"
                   }`}
                 >
@@ -383,7 +383,7 @@ export default function MovieDetails() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
-          <div className="rounded-2xl bg-[#0f1628]/80 border border-white/10 p-5">
+          <div className="rounded-2xl bg-[#0b0f16]/90 border border-white/10 p-5">
             <h2 className="text-xl font-semibold">Creative Team</h2>
             <div className="mt-4 space-y-4 text-sm">
               <div>
@@ -401,7 +401,7 @@ export default function MovieDetails() {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-[#0f1628]/80 border border-white/10 p-5">
+          <div className="rounded-2xl bg-[#0b0f16]/90 border border-white/10 p-5">
             <h2 className="text-xl font-semibold">Languages</h2>
             <div className="mt-4 flex flex-wrap gap-2">
               {languages.length ? (
@@ -423,7 +423,7 @@ export default function MovieDetails() {
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
-          <div ref={reviewPanelRef} className="xl:sticky xl:top-6 h-fit rounded-2xl bg-[#0f1628]/80 border border-white/10 p-5">
+          <div ref={reviewPanelRef} className="xl:sticky xl:top-6 h-fit rounded-2xl bg-[#0b0f16]/90 border border-white/10 p-5">
             <h2 className="text-xl font-semibold">Write a Review</h2>
             <p className="text-slate-400 text-sm mt-1">Rate this movie and share feedback.</p>
             {myExistingReview && (
@@ -442,7 +442,7 @@ export default function MovieDetails() {
                   onChange={(event) =>
                     setReviewForm((prev) => ({ ...prev, rating: Number(event.target.value) }))
                   }
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 outline-none focus:border-cyan-400/60"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 outline-none focus:border-purple-500/70"
                 >
                   <option value={5}>5 - Excellent</option>
                   <option value={4}>4 - Good</option>
@@ -461,7 +461,7 @@ export default function MovieDetails() {
                   }
                   rows={5}
                   placeholder="What did you like or dislike?"
-                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 outline-none focus:border-cyan-400/60"
+                  className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-white/10 outline-none focus:border-purple-500/70"
                 />
               </div>
 
@@ -479,7 +479,7 @@ export default function MovieDetails() {
               <button
                 type="submit"
                 disabled={isSubmittingReview}
-                className="w-full px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-semibold hover:bg-cyan-400 transition disabled:opacity-60"
+                className="w-full px-4 py-2.5 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition disabled:opacity-60 shadow-lg shadow-purple-900/35"
               >
                 {isSubmittingReview
                   ? myExistingReview
@@ -492,7 +492,7 @@ export default function MovieDetails() {
             </form>
           </div>
 
-          <div className="rounded-2xl bg-[#0f1628]/80 border border-white/10 p-5">
+          <div className="rounded-2xl bg-[#0b0f16]/90 border border-white/10 p-5">
             <div className="flex items-end justify-between">
               <div>
                 <h2 className="text-xl font-semibold">Audience Reviews</h2>
@@ -513,7 +513,7 @@ export default function MovieDetails() {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-cyan-500/20 text-cyan-200 flex items-center justify-center text-xs font-semibold">
+                        <div className="h-9 w-9 rounded-full bg-purple-500/20 text-purple-200 flex items-center justify-center text-xs font-semibold">
                           {getInitials(review?.user?.name || "User")}
                         </div>
                         <div>
@@ -571,7 +571,7 @@ export default function MovieDetails() {
       </section>
 
       {!!suggestedMovies.length && (
-        <section className="border-t border-white/10 bg-[#0b1324]">
+        <section className="border-t border-white/10 bg-[#0b0f16]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-end justify-between">
               <div>
@@ -579,7 +579,7 @@ export default function MovieDetails() {
                 <p className="text-slate-400 text-sm mt-1">More titles from a similar genre.</p>
               </div>
               <button
-                onClick={() => navigate("/dash")}
+                onClick={() => navigate("/dashboard")}
                 className="text-sm px-3 py-2 rounded-lg bg-slate-900/70 border border-white/10 hover:bg-slate-800/80 transition"
               >
                 Browse all
@@ -591,7 +591,7 @@ export default function MovieDetails() {
                 <button
                   key={suggestedMovie.id}
                   onClick={() => navigate(`/movie/${suggestedMovie.id}`)}
-                  className="text-left rounded-xl overflow-hidden border border-white/10 bg-slate-900/60 hover:border-cyan-400/50 hover:-translate-y-0.5 transition"
+                  className="text-left rounded-xl overflow-hidden border border-white/10 bg-slate-900/60 hover:border-purple-500/50 hover:-translate-y-0.5 transition"
                 >
                   <div className="aspect-[2/3] overflow-hidden">
                     <img
@@ -615,3 +615,4 @@ export default function MovieDetails() {
     </div>
   );
 }
+
