@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Search, Sparkles, Bell } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import { useEffect } from 'react';
 import MovieCard from '../components/MovieCard';
 import toast from 'react-hot-toast';
-import { getAllMovies, getMoviesWithFilters } from '../services/api';
+import { getMoviesWithFilters } from '../services/api';
 
 // Main Component
 const UserDashboard = () => {
@@ -222,8 +222,8 @@ const UserDashboard = () => {
             ${showHeader ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"}`}
           >
 
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex-1 max-w-2xl">
+            <div className="mb-6">
+              <div className="w-full max-w-3xl">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -232,12 +232,6 @@ const UserDashboard = () => {
                     className="w-full bg-gray-800 rounded-lg pl-12 pr-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-4 ml-4">
-                <button className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center hover:bg-gray-700">
-                  <Bell />
-                </button>
-                <div className="w-8 h-8 bg-linear-to-br from-purple-400 to-purple-900 rounded-lg"></div>
               </div>
             </div>
           </div>
