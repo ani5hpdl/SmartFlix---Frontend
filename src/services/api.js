@@ -29,7 +29,7 @@ export const getMe = () => Api.get("/api/auth/getMe", authConfig());
 
 export const verify = (data) => Api.get(`/api/auth/verify?token=${data}`);
 
-export const getAllMovies = () => Api.get("/api/movies/getmovies");
+export const getAllMovies = (params = {}) => Api.get("/api/movies/getmovies", { params });
 
 export const getMoviesWithFilters = (data) => Api.get(`/api/movies/filtermovies?genres=${data.genres}&yearFrom=${data.yearFrom}&yearTo=${data.yearTo}&minRating=${data.minRating}&maxRating=${data.maxRating}`);
 
@@ -44,6 +44,7 @@ export const getALlUser = () => Api.get(`/api/user/getUsers`,authConfig());
 export const getUserById = (id) => Api.get(`/api/user/getUserById/${id}`,authConfig()); 
 
 export const importMovies = () => Api.get("/api/movies/import",authConfig());
+export const deleteAllMovies = () => Api.delete("/api/movies/delete-all", authConfig());
 
 export const getAllReviewsAdmin = () => Api.get("/api/review/getAllReviews", authConfig());
 
