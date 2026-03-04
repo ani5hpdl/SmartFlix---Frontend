@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, MoreVertical, ChevronLeft, ChevronRight, SquarePen, BadgeCheck, BadgeAlert } from 'lucide-react';
+import { Search, Plus, ChevronLeft, ChevronRight, SquarePen, BadgeCheck, BadgeAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getALlUser, updateUser } from '../services/api';
-import { Link } from 'react-router-dom';
+import AdminNavbar from '../components/AdminNavbar';
 
 const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All Roles');
   const [statusFilter, setStatusFilter] = useState('Any Status');
-  const [currentPage, setCurrentPage] = useState(1);
   const [users, setUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [bulkRole, setBulkRole] = useState('');
@@ -133,19 +132,6 @@ const UserManagement = () => {
     }
   };
 
-  const formatLockUntil = (lockUntil) => {
-    if (!lockUntil) return 'Not suspended';
-
-    const lockDate = new Date(lockUntil);
-    const now = new Date();
-
-    if (lockDate <= now) {
-      return 'Expired';
-    }
-
-    return lockDate.toLocaleString(); // nice readable format
-  };
-
   const unsuspendUser = async (user) => {
     try {
       const res = await updateUser(user.id, {
@@ -157,7 +143,7 @@ const UserManagement = () => {
         toast.success('User unsuspended');
         fetchUsers();
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to unsuspend user');
     }
   };
@@ -166,9 +152,8 @@ const UserManagement = () => {
     if (!window.confirm('Are you sure?')) return;
 
     try {
-      await deleteUserApi(userId);
+      setUsers(prev => prev.filter(user => user.id !== userId));
       toast.success('User deleted');
-      fetchUsers();
     } catch {
       toast.error('Delete failed');
     }
@@ -197,70 +182,11 @@ const UserManagement = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-950 border-r border-slate-800 p-4">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">▶</span>
-          </div>
-          <span className="text-xl font-bold">MovieStream</span>
-        </div>
-
-        <nav className="space-y-1">
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">📊</span>
-            <span>Dashboard</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">📚</span>
-            <span>Content Library</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded bg-purple-600/20 text-purple-400">
-            <span className="text-lg">👥</span>
-            <span>Users</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">📈</span>
-            <span>Analytics</span>
-          </a>
-          <Link to="/reviewdash" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">⭐</span>
-            <span>Reviews</span>
-          </Link>
-        </nav>
-
-        <div className="mt-8 pt-4 border-t border-slate-800">
-          <p className="text-xs text-slate-600 uppercase mb-2 px-3">System</p>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">⚙️</span>
-            <span>Settings</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3 py-2 rounded text-slate-400 hover:bg-slate-800 transition">
-            <span className="text-lg">🔒</span>
-            <span>Permissions</span>
-          </a>
-        </div>
-
-        <div className="absolute bottom-4 left-4 right-4">
-          <div className="flex items-center gap-3 p-3 bg-slate-800 rounded-lg">
-            <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
-              A
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Alexander</p>
-              <p className="text-xs text-slate-400">Super Admin</p>
-            </div>
-            <button className="text-slate-400 hover:text-slate-200">
-              <MoreVertical size={18} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 p-8">
-        <div className="max-w-7xl">
+    <div className="min-h-screen bg-slate-900 text-slate-100">
+      <AdminNavbar />
+      <main className="px-5 md:px-7 py-7">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="rounded-2xl border border-slate-800/80 bg-slate-950/55 p-5 md:p-7">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -410,7 +336,7 @@ const UserManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user, index) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="border-b border-slate-700/50 hover:bg-slate-800/30 transition">
                     <td className="p-4">
                       <input
@@ -483,9 +409,11 @@ const UserManagement = () => {
             </table>
           </div>
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };
 
 export default UserManagement;
+
